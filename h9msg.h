@@ -1,5 +1,5 @@
 /*
- * h9avr-can v0.1
+ * h9avr-can v0.2
  *
  * Created by SQ8KFH on 2017-08-07.
  *
