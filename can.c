@@ -51,8 +51,7 @@ __attribute__((naked)) __attribute__((section(".init3"))) void wdt_init(void) {
 }
 
 
-ISR(CAN_INT_vect)
-{
+ISR(CAN_INT_vect) {
     uint8_t canhpmob = CANHPMOB;
     uint8_t cangit = CANGIT;
     if (canhpmob != 0xf0) {
@@ -82,7 +81,7 @@ ISR(CAN_INT_vect)
 
 
 uint8_t process_msg(h9msg_t *cm) {
-    if ((cm->type & H9MSG_TYPE_GROUP_MASK) == H9MSG_TYPE_GROUP_2 && cm->destination_id == can_node_id) {
+    if ((cm->type & H9MSG_NODE_STANDARD_MSG_GROUP_MASK) == H9MSG_NODE_STANDARD_MSG_GROUP && cm->destination_id == can_node_id) {
         if (cm->type == H9MSG_TYPE_SET_REG && cm->dlc > 1) {
             if (cm->data[0] >= 10)
                 return 1;
@@ -136,9 +135,6 @@ uint8_t process_msg(h9msg_t *cm) {
             CAN_put_msg(&cm_res);
             return 0;
         }
-        else if (cm->type == H9MSG_TYPE_GET_BULK_DATA && cm->dlc == 1) {
-            return 1;
-        }
         else if (cm->type == H9MSG_TYPE_NODE_UPGRADE && cm->dlc == 0) {
 #ifdef BOOTSTART
             cli();
@@ -163,7 +159,7 @@ uint8_t process_msg(h9msg_t *cm) {
             return 1;
         }
     }
-    else if ((cm->type & H9MSG_TYPE_GROUP_MASK) == H9MSG_TYPE_GROUP_3
+    else if ((cm->type & H9MSG_NODE_STANDARD_MSG_BROADCAST_SUBGROUP_MASK) == H9MSG_NODE_STANDARD_MSG_BROADCAST_SUBGROUP
              && (cm->destination_id == can_node_id || cm->destination_id == H9MSG_BROADCAST_ID)) {
         if (cm->type == H9MSG_TYPE_DISCOVERY && cm->dlc == 0) {
             h9msg_t cm_res;
@@ -185,7 +181,7 @@ uint8_t process_msg(h9msg_t *cm) {
             } while(0);
         }
     }
-    else if ((cm->type & H9MSG_TYPE_GROUP_MASK) == H9MSG_TYPE_GROUP_1) {
+    else if ((cm->type & H9MSG_NODE_ALL_REMOTE_MSG_GROUP_MASK) == H9MSG_NODE_ALL_REMOTE_MSG_GROUP) {
         return 2;
     }
 
@@ -225,15 +221,15 @@ void CAN_init(void) {
 
     //select mob 1 for broadcast with type form 3rd group
     CANPAGE = 0x01 << MOBNB0;
-    set_CAN_id(0, H9MSG_TYPE_GROUP_3, 0, H9MSG_BROADCAST_ID, 0);
-    set_CAN_id_mask(0, H9MSG_TYPE_GROUP_MASK, 0, (1<<H9MSG_DESTINATION_ID_BIT_LENGTH)-1, 0);
+    set_CAN_id(0, H9MSG_NODE_STANDARD_MSG_BROADCAST_SUBGROUP, 0, H9MSG_BROADCAST_ID, 0);
+    set_CAN_id_mask(0, H9MSG_NODE_STANDARD_MSG_BROADCAST_SUBGROUP_MASK, 0, (1<<H9MSG_DESTINATION_ID_BIT_LENGTH)-1, 0);
     CANIDM4 |= 1 << IDEMSK; // set filter
     CANCDMOB = (1<<CONMOB1) | (1<<IDE); //rx mob, 29-bit only
 
     //select mob 2 for unicast
     CANPAGE = 0x02 << MOBNB0;
-    set_CAN_id(0, H9MSG_TYPE_GROUP_2_AND_3, 0, can_node_id, 0);
-    set_CAN_id_mask(0, H9MSG_TYPE_DOUBLE_GROUP_MASK, 0, (1<<H9MSG_DESTINATION_ID_BIT_LENGTH)-1, 0); //H9MSG_TYPE_GROUP_2 | H9MSG_TYPE_GROUP_3
+    set_CAN_id(0, H9MSG_NODE_STANDARD_MSG_GROUP, 0, can_node_id, 0);
+    set_CAN_id_mask(0, H9MSG_NODE_STANDARD_MSG_GROUP_MASK, 0, (1<<H9MSG_DESTINATION_ID_BIT_LENGTH)-1, 0); //H9MSG_TYPE_GROUP_2 | H9MSG_TYPE_GROUP_3
     CANIDM4 |= 1 << IDEMSK; // set filter
     CANCDMOB = (1<<CONMOB1) | (1<<IDE); //rx mob, 29-bit only
 
@@ -260,10 +256,16 @@ void CAN_send_turned_on_broadcast(void) {
 }
 
 
-void CAN_set_mob_for_remote_node1(uint16_t remote_node_id) {
+void CAN_set_mob_for_remote_node1(uint16_t remote_node_id, uint8_t all_msg_group) {
     CANPAGE = 0x03 << MOBNB0; //select mob 3
-    set_CAN_id(0, H9MSG_TYPE_GROUP_1, 0, 0, remote_node_id);
-    set_CAN_id_mask(0, H9MSG_TYPE_GROUP_MASK, 0, 0, (1<<H9MSG_SOURCE_ID_BIT_LENGTH)-1);
+    if (all_msg_group) {
+        set_CAN_id(0, H9MSG_NODE_ALL_REMOTE_MSG_GROUP, 0, 0, remote_node_id);
+        set_CAN_id_mask(0, H9MSG_NODE_ALL_REMOTE_MSG_GROUP_MASK, 0, 0, (1<<H9MSG_SOURCE_ID_BIT_LENGTH)-1);
+    }
+    else {
+        set_CAN_id(0, H9MSG_NODE_RESPONSE_MSG_GROUP, 0, 0, remote_node_id);
+        set_CAN_id_mask(0, H9MSG_NODE_RESPONSE_MSG_GROUP_MASK, 0, 0, (1<<H9MSG_SOURCE_ID_BIT_LENGTH)-1);
+    }
     CANIDM4 |= 1 << IDEMSK; // set filter
     CANCDMOB = (1<<CONMOB1) | (1<<IDE); //rx mob, 29-bit only
 
@@ -271,10 +273,16 @@ void CAN_set_mob_for_remote_node1(uint16_t remote_node_id) {
 }
 
 
-void CAN_set_mob_for_remote_node2(uint16_t remote_node_id) {
+void CAN_set_mob_for_remote_node2(uint16_t remote_node_id, uint8_t all_msg_group) {
     CANPAGE = 0x04 << MOBNB0; //select mob 4
-    set_CAN_id(0, H9MSG_TYPE_GROUP_1, 0, 0, remote_node_id);
-    set_CAN_id_mask(0, H9MSG_TYPE_GROUP_MASK, 0, 0, (1<<H9MSG_SOURCE_ID_BIT_LENGTH)-1);
+    if (all_msg_group) {
+        set_CAN_id(0, H9MSG_NODE_ALL_REMOTE_MSG_GROUP, 0, 0, remote_node_id);
+        set_CAN_id_mask(0, H9MSG_NODE_ALL_REMOTE_MSG_GROUP_MASK, 0, 0, (1<<H9MSG_SOURCE_ID_BIT_LENGTH)-1);
+    }
+    else {
+        set_CAN_id(0, H9MSG_NODE_RESPONSE_MSG_GROUP, 0, 0, remote_node_id);
+        set_CAN_id_mask(0, H9MSG_NODE_RESPONSE_MSG_GROUP_MASK, 0, 0, (1<<H9MSG_SOURCE_ID_BIT_LENGTH)-1);
+    }
     CANIDM4 |= 1 << IDEMSK; // set filter
     CANCDMOB = (1<<CONMOB1) | (1<<IDE); //rx mob, 29-bit only
     
@@ -282,10 +290,16 @@ void CAN_set_mob_for_remote_node2(uint16_t remote_node_id) {
 }
 
 
-void CAN_set_mob_for_remote_node3(uint16_t remote_node_id) {
+void CAN_set_mob_for_remote_node3(uint16_t remote_node_id, uint8_t all_msg_group) {
     CANPAGE = 0x05 << MOBNB0; //select mob 5
-    set_CAN_id(0, H9MSG_TYPE_GROUP_1, 0, 0, remote_node_id);
-    set_CAN_id_mask(0, H9MSG_TYPE_GROUP_MASK, 0, 0, (1<<H9MSG_SOURCE_ID_BIT_LENGTH)-1);
+    if (all_msg_group) {
+        set_CAN_id(0, H9MSG_NODE_ALL_REMOTE_MSG_GROUP, 0, 0, remote_node_id);
+        set_CAN_id_mask(0, H9MSG_NODE_ALL_REMOTE_MSG_GROUP_MASK, 0, 0, (1<<H9MSG_SOURCE_ID_BIT_LENGTH)-1);
+    }
+    else {
+        set_CAN_id(0, H9MSG_NODE_RESPONSE_MSG_GROUP, 0, 0, remote_node_id);
+        set_CAN_id_mask(0, H9MSG_NODE_RESPONSE_MSG_GROUP_MASK, 0, 0, (1<<H9MSG_SOURCE_ID_BIT_LENGTH)-1);
+    }
     CANIDM4 |= 1 << IDEMSK; // set filter
     CANCDMOB = (1<<CONMOB1) | (1<<IDE); //rx mob, 29-bit only
     
@@ -357,9 +371,6 @@ void CAN_init_response_msg(const h9msg_t *req, h9msg_t *res) {
         case H9MSG_TYPE_CLEAR_BIT:
         case H9MSG_TYPE_TOGGLE_BIT:
             res->type = H9MSG_TYPE_REG_EXTERNALLY_CHANGED;
-            break;
-        case H9MSG_TYPE_GET_BULK_DATA:
-            res->type = H9MSG_TYPE_BULK_DATA;
             break;
         case H9MSG_TYPE_DISCOVERY:
             res->type = H9MSG_TYPE_NODE_INFO;
