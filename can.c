@@ -1,5 +1,5 @@
 /*
- * h9avr-can v0.2
+ * h9avr-can v0.3
  *
  * Created by SQ8KFH on 2017-08-07.
  *
@@ -81,7 +81,29 @@ ISR(CAN_INT_vect) {
 
 
 uint8_t process_msg(h9msg_t *cm) {
-    if ((cm->type & H9MSG_NODE_STANDARD_MSG_GROUP_MASK) == H9MSG_NODE_STANDARD_MSG_GROUP && cm->destination_id == can_node_id) {
+    if ((cm->type & H9MSG_NODE_STANDARD_MSG_BROADCAST_SUBGROUP_MASK) == H9MSG_NODE_STANDARD_MSG_BROADCAST_SUBGROUP
+             && (cm->destination_id == can_node_id || cm->destination_id == H9MSG_BROADCAST_ID)) {
+        if (cm->type == H9MSG_TYPE_DISCOVERY && cm->dlc == 0) {
+            h9msg_t cm_res;
+            CAN_init_response_msg(cm, &cm_res);
+            cm_res.dlc = 4;
+            cm_res.data[0] = (NODE_TYPE >> 8) & 0xff;
+            cm_res.data[1] = (NODE_TYPE) & 0xff;
+            cm_res.data[2] = VERSION_MAJOR;
+            cm_res.data[3] = VERSION_MINOR;
+            CAN_put_msg(&cm_res);
+            return 0;
+        }
+        else if (cm->type == H9MSG_TYPE_NODE_RESET && cm->dlc == 0) {
+            cli();
+            do {
+                wdt_enable(WDTO_15MS);
+                for(;;) {
+                }
+            } while(0);
+        }
+    }
+    else if ((cm->type & H9MSG_NODE_STANDARD_MSG_GROUP_MASK) == H9MSG_NODE_STANDARD_MSG_GROUP && cm->destination_id == can_node_id) {
         if (cm->type == H9MSG_TYPE_SET_REG && cm->dlc > 1) {
             if (cm->data[0] >= 10)
                 return 1;
@@ -157,28 +179,6 @@ uint8_t process_msg(h9msg_t *cm) {
         }
         else if (cm->type == H9MSG_TYPE_TOGGLE_BIT && cm->dlc == 2) {
             return 1;
-        }
-    }
-    else if ((cm->type & H9MSG_NODE_STANDARD_MSG_BROADCAST_SUBGROUP_MASK) == H9MSG_NODE_STANDARD_MSG_BROADCAST_SUBGROUP
-             && (cm->destination_id == can_node_id || cm->destination_id == H9MSG_BROADCAST_ID)) {
-        if (cm->type == H9MSG_TYPE_DISCOVERY && cm->dlc == 0) {
-            h9msg_t cm_res;
-            CAN_init_response_msg(cm, &cm_res);
-            cm_res.dlc = 4;
-            cm_res.data[0] = (NODE_TYPE >> 8) & 0xff;
-            cm_res.data[1] = (NODE_TYPE) & 0xff;
-            cm_res.data[2] = VERSION_MAJOR;
-            cm_res.data[3] = VERSION_MINOR;
-            CAN_put_msg(&cm_res);
-            return 0;
-        }
-        else if (cm->type == H9MSG_TYPE_NODE_RESET && cm->dlc == 0) {
-            cli();
-            do {
-                wdt_enable(WDTO_15MS);
-                for(;;) {
-                }
-            } while(0);
         }
     }
     else if ((cm->type & H9MSG_NODE_ALL_REMOTE_MSG_GROUP_MASK) == H9MSG_NODE_ALL_REMOTE_MSG_GROUP) {
