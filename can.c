@@ -326,7 +326,7 @@ uint8_t CAN_get_msg(h9msg_t *cm) {
     if (can_rx_buf_top != can_rx_buf_bottom) {
         cm->priority = (can_rx_buf[can_rx_buf_bottom].canidt1 >> 7) & 0x01;
         cm->type = ((can_rx_buf[can_rx_buf_bottom].canidt1 >> 2) & 0x1f);
-        cm->seqnum = ((can_rx_buf[can_rx_buf_bottom].canidt1 >> 5) & 0x18) | ((can_rx_buf[can_rx_buf_bottom].canidt2 >> 5) & 0x0f);
+        cm->seqnum = ((can_rx_buf[can_rx_buf_bottom].canidt1 << 3) & 0x18) | ((can_rx_buf[can_rx_buf_bottom].canidt2 >> 5) & 0x07);
         cm->destination_id = ((can_rx_buf[can_rx_buf_bottom].canidt2 << 4) & 0x1f0) | ((can_rx_buf[can_rx_buf_bottom].canidt3 >> 4) & 0x0f);
         cm->source_id = ((can_rx_buf[can_rx_buf_bottom].canidt3 << 5) & 0x1e0) | ((can_rx_buf[can_rx_buf_bottom].canidt4 >> 3) & 0x1f);
 
@@ -360,8 +360,8 @@ void CAN_init_new_msg(h9msg_t *mes) {
 
 
 void CAN_init_response_msg(const h9msg_t *req, h9msg_t *res) {
-    CAN_init_new_msg(res);
     res->priority = req->priority;
+    res->seqnum = req->seqnum;
     switch (req->type) {
         case H9MSG_TYPE_GET_REG:
             res->type = H9MSG_TYPE_REG_VALUE;
@@ -376,7 +376,9 @@ void CAN_init_response_msg(const h9msg_t *req, h9msg_t *res) {
             res->type = H9MSG_TYPE_NODE_INFO;
             break;
     }
+    res->source_id = can_node_id;
     res->destination_id = req->source_id;
+    res->dlc = 0;
 }
 
 
