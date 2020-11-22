@@ -83,7 +83,7 @@ ISR(CAN_INT_vect) {
 uint8_t process_msg(h9msg_t *cm) {
     if ((cm->type & H9MSG_NODE_STANDARD_MSG_BROADCAST_SUBGROUP_MASK) == H9MSG_NODE_STANDARD_MSG_BROADCAST_SUBGROUP
              && (cm->destination_id == can_node_id || cm->destination_id == H9MSG_BROADCAST_ID)) {
-        if (cm->type == H9MSG_TYPE_DISCOVERY && cm->dlc == 0) {
+        if (cm->type == H9MSG_TYPE_DISCOVER && cm->dlc == 0) {
             h9msg_t cm_res;
             CAN_init_response_msg(cm, &cm_res);
             cm_res.dlc = 4;
@@ -350,7 +350,7 @@ uint8_t CAN_get_msg(h9msg_t *cm) {
 
 
 void CAN_init_new_msg(h9msg_t *mes) {
-    static uint8_t next_seqnum = 1;
+    static uint8_t next_seqnum = 0;
     mes->priority = H9MSG_PRIORITY_LOW;
     mes->seqnum = next_seqnum;
     mes->source_id = can_node_id;
@@ -372,7 +372,7 @@ void CAN_init_response_msg(const h9msg_t *req, h9msg_t *res) {
         case H9MSG_TYPE_TOGGLE_BIT:
             res->type = H9MSG_TYPE_REG_EXTERNALLY_CHANGED;
             break;
-        case H9MSG_TYPE_DISCOVERY:
+        case H9MSG_TYPE_DISCOVER:
             res->type = H9MSG_TYPE_NODE_INFO;
             break;
     }
