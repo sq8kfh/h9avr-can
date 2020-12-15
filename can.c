@@ -149,6 +149,20 @@ uint8_t process_msg(h9msg_t *cm) {
                     cm_res.data[2] = (can_node_id) & 0xff;
                     cm_res.dlc = 3;
                     break;
+                case 4: //mcu type
+#if defined (__AVR_ATmega16M1__)
+                    cm_res.data[1] = 0x01;
+#elif defined (__AVR_ATmega32M1__)
+                    cm_res.data[1] = 0x02;
+#elif defined (__AVR_ATmega64M1__)
+                    cm_res.data[1] = 0x03;
+#elif defined (__AVR_AT90CAN128__)
+                    cm_res.data[1] = 0x04;
+#else
+#error Unsupported MCU
+#endif
+                    cm_res.dlc = 2;
+                    break;
                 default:
                     cm_res.type = H9MSG_TYPE_ERROR;
                     cm_res.data[0] = H9MSG_ERROR_INVALID_REGISTER;
