@@ -217,12 +217,16 @@ void CAN_init(void) {
 
 #if F_CPU == 4000000UL
     CANBT1 = 0x06;
-        CANBT2 = 0x04;
-        CANBT3 = 0x13;
+    CANBT2 = 0x04;
+    CANBT3 = 0x13;
+#elif F_CPU == 12000000UL
+    CANBT1 = 0x16;
+    CANBT2 = 0x04;
+    CANBT3 = 0x13;
 #elif F_CPU == 16000000UL
     CANBT1 = 0x1e;
-        CANBT2 = 0x04;
-        CANBT3 = 0x13;
+    CANBT2 = 0x04;
+    CANBT3 = 0x13;
 #else
 #error "Please specify F_CPU"
 #endif
