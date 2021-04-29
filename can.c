@@ -34,7 +34,7 @@ volatile uint8_t can_rx_buf_top = 0;
 volatile uint8_t can_rx_buf_bottom = 0;
 
 volatile uint16_t can_node_id;
-uint16_t ee_node_id __attribute__((section(".eepromfixed"))) = 0;
+uint16_t ee_node_id __attribute__((section(".eepromfixed"))) = H9MSG_BROADCAST_ID - NODE_TYPE;
 
 
 static void read_node_id(void);
@@ -140,16 +140,31 @@ uint8_t process_msg(h9msg_t *cm) {
                     cm_res.dlc = 3;
                     break;
                 case 2: //node version
-                    cm_res.data[1] = VERSION_MAJOR;
-                    cm_res.data[2] = VERSION_MINOR;
-                    cm_res.dlc = 3;
+                    cm_res.data[1] = (VERSION_MAJOR >> 8);
+                    cm_res.data[2] = VERSION_MAJOR & 0xff;
+                    cm_res.data[3] = (VERSION_MINOR >> 8) & 0xff;
+                    cm_res.data[4] = VERSION_MINOR & 0xff;
+                    cm_res.data[5] = (VERSION_PATCH >> 8) & 0xff;
+                    cm_res.data[6] = VERSION_PATCH & 0xff;
+                    cm_res.dlc = 7;
                     break;
-                case 3: //node id
+                case 3: //node version identifiers
+                    cm_res.dlc = 7;
+                    char *tmp = BUILD_METADATA;
+                    uint8_t i = 0;
+                    for (; tmp[i] && i < 6; ++i) {
+                        cm_res.data[1 + i] = tmp[i];
+                    }
+                    for (; i < 6; ++i) {
+                        cm_res.data[1 + i] = '\0';
+                    }
+                    break;
+                case 4: //node id
                     cm_res.data[1] = (can_node_id >> 8) & 0x01;
                     cm_res.data[2] = (can_node_id) & 0xff;
                     cm_res.dlc = 3;
                     break;
-                case 4: //mcu type
+                case 5: //mcu type
 #if defined (__AVR_ATmega16M1__)
                     cm_res.data[1] = 0x01;
 #elif defined (__AVR_ATmega32M1__)
