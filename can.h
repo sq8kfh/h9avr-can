@@ -1,9 +1,9 @@
 /*
- * h9avr-can v0.3
+ * h9avr-can v0.3.1
  *
  * Created by SQ8KFH on 2017-08-07.
  *
- * Copyright (C) 2017-2020 Kamil Palkowski. All rights reserved.
+ * Copyright (C) 2017-2021 Kamil Palkowski. All rights reserved.
  */
 
 #ifndef CAN_H

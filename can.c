@@ -1,9 +1,9 @@
 /*
- * h9avr-can v0.3
+ * h9avr-can v0.3.1
  *
  * Created by SQ8KFH on 2017-08-07.
  *
- * Copyright (C) 2017-2020 Kamil Palkowski. All rights reserved.
+ * Copyright (C) 2017-2021 Kamil Palkowski. All rights reserved.
  */
 
 #include "config.h"
@@ -86,11 +86,15 @@ uint8_t process_msg(h9msg_t *cm) {
         if (cm->type == H9MSG_TYPE_DISCOVER && cm->dlc == 0) {
             h9msg_t cm_res;
             CAN_init_response_msg(cm, &cm_res);
-            cm_res.dlc = 4;
+            cm_res.dlc = 8;
             cm_res.data[0] = (NODE_TYPE >> 8) & 0xff;
             cm_res.data[1] = (NODE_TYPE) & 0xff;
-            cm_res.data[2] = VERSION_MAJOR;
-            cm_res.data[3] = VERSION_MINOR;
+            cm_res.data[2] = (VERSION_MAJOR >> 8);
+            cm_res.data[3] = VERSION_MAJOR & 0xff;
+            cm_res.data[4] = (VERSION_MINOR >> 8) & 0xff;
+            cm_res.data[5] = VERSION_MINOR & 0xff;
+            cm_res.data[6] = (VERSION_PATCH >> 8) & 0xff;
+            cm_res.data[7] = VERSION_PATCH & 0xff;
             CAN_put_msg(&cm_res);
             return 0;
         }
@@ -280,11 +284,15 @@ void CAN_send_turned_on_broadcast(void) {
 
     cm.type = H9MSG_TYPE_NODE_TURNED_ON;
     cm.destination_id = H9MSG_BROADCAST_ID;
-    cm.dlc = 4;
+    cm.dlc = 8;
     cm.data[0] = (NODE_TYPE >> 8) & 0xff;
     cm.data[1] = (NODE_TYPE) & 0xff;
-    cm.data[2] = VERSION_MAJOR;
-    cm.data[3] = VERSION_MINOR;
+    cm.data[2] = (VERSION_MAJOR >> 8);
+    cm.data[3] = VERSION_MAJOR & 0xff;
+    cm.data[4] = (VERSION_MINOR >> 8) & 0xff;
+    cm.data[5] = VERSION_MINOR & 0xff;
+    cm.data[6] = (VERSION_PATCH >> 8) & 0xff;
+    cm.data[7] = VERSION_PATCH & 0xff;
     CAN_put_msg(&cm);
 }
 
