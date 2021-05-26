@@ -14,8 +14,7 @@
 #define H9MSG_PRIORITY_BIT_LENGTH 1
 #define H9MSG_TYPE_BIT_LENGTH 5
 #define H9MSG_SEQNUM_BIT_LENGTH 5
-#define H9MSG_DESTINATION_ID_BIT_LENGTH 9
-#define H9MSG_SOURCE_ID_BIT_LENGTH 9
+#define H9MSG_ID_BIT_LENGTH 9
 
 #define H9MSG_BROADCAST_ID 0x1ff
 
@@ -88,8 +87,8 @@ struct h9msg {
     uint8_t priority :H9MSG_PRIORITY_BIT_LENGTH;
     uint8_t type :H9MSG_TYPE_BIT_LENGTH;
     uint8_t seqnum: H9MSG_SEQNUM_BIT_LENGTH;
-    uint16_t destination_id :H9MSG_DESTINATION_ID_BIT_LENGTH;
-    uint16_t source_id :H9MSG_SOURCE_ID_BIT_LENGTH;
+    uint16_t destination_id :H9MSG_ID_BIT_LENGTH;
+    uint16_t source_id :H9MSG_ID_BIT_LENGTH;
     uint8_t dlc;
     uint8_t data[8];
 };
