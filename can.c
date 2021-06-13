@@ -115,7 +115,7 @@ uint8_t process_msg(h9msg_t *cm) {
             CAN_init_response_msg(cm, &cm_res);
             cm_res.dlc = 2;
             cm_res.data[0] = cm->data[0];
-            if (cm_res.data[0] == 3 && cm->dlc == 3) { //reg 3
+            if (cm_res.data[0] == 4 && cm->dlc == 3) { //reg 4
                 write_node_id((cm->data[1] & 0x01) << 8 | cm->data[2]);
 
                 cm_res.data[1] = (can_node_id >> 8) & 0x01;
