@@ -51,7 +51,11 @@ __attribute__((naked)) __attribute__((section(".init3"))) void wdt_init(void) {
 }
 
 
+#if defined (__AVR_AT90CAN128__)
+ISR(CANIT_vect) {
+#else
 ISR(CAN_INT_vect) {
+#endif
     uint8_t canhpmob = CANHPMOB;
     uint8_t cangit = CANGIT;
     if (canhpmob != 0xf0) {
