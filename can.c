@@ -354,7 +354,11 @@ void CAN_set_mob_for_remote_node3(uint16_t remote_node_id, uint8_t all_msg_group
 
 void CAN_put_msg(h9msg_t *cm) {
     CANPAGE = 0 << MOBNB0;              // Select MOb0 for transmission
-    while ( CANEN2 & ( 1 << ENMOB0 ) ); // Wait for MOb 0 to be free
+    uint8_t bc = 100;
+    while ( CANEN2 & ( 1 << ENMOB0 ) && bc) --bc; // Wait for MOb 0 to be free
+
+    if (CANEN2 & ( 1 << ENMOB0 )) return;
+    
     CANSTMOB = 0x00;                    // Clear mob status register
 
     set_CAN_id(cm->priority, cm->type, cm->seqnum, cm->destination_id, cm->source_id);
