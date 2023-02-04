@@ -13,6 +13,7 @@
 #include <avr/wdt.h>
 
 #include "can.h"
+#include "build_information.h"
 
 #define CAN_RX_BUF_SIZE 16
 #define CAN_RX_BUF_INDEX_MASK 0x0F
@@ -157,8 +158,9 @@ uint8_t process_msg(h9msg_t *cm) {
                     cm_res.dlc = 7;
                     break;
                 case 3: //node version identifiers
+                //TODO: add multi-message value with message counter on 7 byte
                     cm_res.dlc = 7;
-                    char *tmp = BUILD_METADATA;
+                    char *tmp = BUILD_INFORMATION_STR;
                     uint8_t i = 0;
                     for (; tmp[i] && i < 6; ++i) {
                         cm_res.data[1 + i] = tmp[i];
