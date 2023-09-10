@@ -183,6 +183,8 @@ uint8_t process_msg(h9msg_t *cm) {
                     cm_res.data[1] = 0x03;
 #elif defined (__AVR_AT90CAN128__)
                     cm_res.data[1] = 0x04;
+#elif defined (__AVR_ATmega32C1__)
+                    cm_res.data[2] = 0x05;
 #else
 #error Unsupported MCU
 #endif
